@@ -135,7 +135,7 @@
 			(type default)
 		)
 		(fill none)
-		(layer "Dwgs.User")
+		(layer "F.SilkS")
 		(uuid "74fb7dc5-57a3-4df6-aacc-ae5ad0dfdcb4")
 	)
 	(fp_line
