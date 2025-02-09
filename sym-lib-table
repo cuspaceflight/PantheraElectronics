@@ -1,0 +1,6 @@
+(sym_lib_table
+  (version 7)
+  (lib (name "Panthera components")(type "KiCad")(uri "${KIPRJMOD}/Panthera components.kicad_sym")(options "")(descr ""))
+  (lib (name "GY-521")(type "KiCad")(uri "${KIPRJMOD}/MPU6050/GY-521.kicad_sym")(options "")(descr ""))
+  (lib (name "freshers_flight_comp")(type "KiCad")(uri "${KIPRJMOD}/freshers_flight_comp.kicad_sym")(options "")(descr ""))
+)
