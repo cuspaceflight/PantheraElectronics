@@ -75,8 +75,19 @@
 			(type default)
 		)
 		(fill none)
-		(layer "Dwgs.User")
+		(layer "F.SilkS")
 		(uuid "93ebd4b3-3602-4446-a08d-54f0ea434617")
+	)
+	(fp_circle
+		(center -6 -22)
+		(end -5.5 -22)
+		(stroke
+			(width 0.1)
+			(type default)
+		)
+		(fill none)
+		(layer "F.SilkS")
+		(uuid "e55d07dd-2905-4fb8-b1c8-5ca275994921")
 	)
 	(fp_rect
 		(start -15.24 -22.86)

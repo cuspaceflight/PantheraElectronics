@@ -4895,7 +4895,7 @@
 		(dnp no)
 		(fields_autoplaced yes)
 		(uuid "76f7d440-dfac-44ec-b9af-ad813cdef45f")
-		(property "Reference" "MPU1"
+		(property "Reference" "BME1"
 			(at 72.39 84.4549 0)
 			(effects
 				(font
@@ -4961,7 +4961,7 @@
 		(instances
 			(project ""
 				(path "/505f7bfa-4c2b-407e-860d-cc090cf0cd9e"
-					(reference "MPU1")
+					(reference "BME1")
 					(unit 1)
 				)
 			)
@@ -5244,13 +5244,12 @@
 		(dnp no)
 		(fields_autoplaced yes)
 		(uuid "a371b700-0027-4210-838d-5c173ca7aad3")
-		(property "Reference" "ACC1"
-			(at 76.2 115.5701 0)
+		(property "Reference" "MPU1"
+			(at 86.36 101.6 0)
 			(effects
 				(font
 					(size 1.27 1.27)
 				)
-				(justify left)
 			)
 		)
 		(property "Value" "GY-521"
@@ -5317,7 +5316,7 @@
 		(instances
 			(project ""
 				(path "/505f7bfa-4c2b-407e-860d-cc090cf0cd9e"
-					(reference "ACC1")
+					(reference "MPU1")
 					(unit 1)
 				)
 			)
