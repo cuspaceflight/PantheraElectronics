@@ -11,12 +11,10 @@
       devShells.${system}.default = pkgs.mkShell {
         nativeBuildInputs = with pkgs; [
           arduino-cli
+
           gnumake
           teensy-loader-cli
           minicom
-        ];
-
-        buildInputs = with pkgs; [
         ];
       };
     };

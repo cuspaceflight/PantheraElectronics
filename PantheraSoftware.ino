@@ -1,3 +1,4 @@
+#include <Arduino.h>
 /***
  *              _____        _   _ _______ _    _ ______ _____
  *             |  __ \ /\   | \ | |__   __| |  | |  ____|  __ \     /\
@@ -19,20 +20,19 @@
  * Otherwise tests for components of the PCB will be enabled
  */
 
-
 // #define GPS_TEST
 // #define MPU_TEST
 // #define BMP_TEST
-#define LORA_TEST
+// #define LORA_TEST
 
 #if defined GPS_TEST
-  #include "Tests/TEST_GPS.cpp"
+#include "Tests/TEST_GPS.cpp"
 #elif defined MPU_TEST
-  #include "Tests/TEST_MPU.cpp"
+#include "Tests/TEST_MPU.cpp"
 #elif defined BMP_TEST
-  #include "Tests/TEST_BMP.cpp"
+#include "Tests/TEST_BMP.cpp"
 #elif defined LORA_TEST
-  #include "Tests/TEST_LORA.cpp"
+#include "Tests/TEST_LORA.cpp"
 #else
-  #include "Main.cpp"
+#include "srcFiles/Main.cpp"
 #endif

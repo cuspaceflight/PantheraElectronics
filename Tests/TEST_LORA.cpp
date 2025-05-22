@@ -3,16 +3,18 @@
 
 int counter = 0;
 
+#define LORA_FREQ 433E6
+
 void setup()
 {
     Serial.begin(9600);
     while (!Serial)
         delay(100);
 
-    int status = LoRa.begin(9600);
+    int status = LoRa.begin(LORA_FREQ);
     if (!status) {
         Serial.println("LoRa failed");
-        status = LoRa.begin(9600);
+        status = LoRa.begin(LORA_FREQ);
         delay(1000);
     }
 }
