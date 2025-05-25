@@ -26,6 +26,9 @@ typedef struct SensorData_T {
 #define LORA_FREQ 433E6
 #define BMP_ADDR 0x76
 #define BUFFER_SIZE 255
+#define GPS_RX_PIN 0
+#define GPS_TX_PIN 0
+#define GPS_BAUDRATE 9600
 
 /**
  * Debug
@@ -54,6 +57,7 @@ Adafruit_Sensor* g_BMP_pressure_sensor = g_BMP.getPressureSensor();
 Adafruit_MPU6050 g_MPU;
 
 NMEAGPS g_GPS;
+SoftwareSerial g_GPS_port(GPS_RX_PIN, GPS_TX_PIN);
 
 SensorData g_SensorData;
 char g_Buffer[BUFFER_SIZE];
@@ -118,7 +122,7 @@ void init_mpu()
 /**
  * Initialize the GPS sensor
  */
-void init_gps() { }
+void init_gps() { g_GPS_port.begin(GPS_BAUDRATE); }
 
 /**
  * Transmit the message specified by data and len via the LoRa

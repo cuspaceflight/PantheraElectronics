@@ -21,12 +21,15 @@
  */
 
 // #define GPS_TEST
+#define GPS_RAW_TEST
 // #define MPU_TEST
 // #define BMP_TEST
 // #define LORA_TEST
 
 #if defined GPS_TEST
 #include "Tests/TEST_GPS.cpp"
+#elif defined GPS_RAW_TEST
+#include "Tests/TEST_GPS_RAW.cpp"
 #elif defined MPU_TEST
 #include "Tests/TEST_MPU.cpp"
 #elif defined BMP_TEST

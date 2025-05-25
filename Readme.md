@@ -49,6 +49,3 @@ The reason behind the name srcFiles instead of src is due to arduino-cli includi
 any files either in the base directory, or files includes in src. This leads to
 double inclusion of Main.cpp if header guards are not used which I chose to
 avoid, hence the odd naming of the folder
-
-<!-- ## FLIGHT CHECKLIST -->
-<!-- 1. [ ] -->
