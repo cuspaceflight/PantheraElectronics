@@ -21,7 +21,7 @@
  */
 
 // #define GPS_TEST
-#define GPS_RAW_TEST
+// #define GPS_RAW_TEST
 // #define MPU_TEST
 // #define BMP_TEST
 // #define LORA_TEST
@@ -37,5 +37,5 @@
 #elif defined LORA_TEST
 #include "Tests/TEST_LORA.cpp"
 #else
-#include "srcFiles/Main.cpp"
+#include "source/Avionics/Avionics.cpp"
 #endif

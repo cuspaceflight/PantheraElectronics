@@ -19,6 +19,14 @@ minicom
 make
 ```
 
+Arduino libraries
+```sh
+neogps
+adafruit_bmp280
+adafruit_mpu6050
+lora
+```
+
 Ensure the port in the Makefile is set correctly
 
 To build there is either
@@ -45,7 +53,7 @@ any broken components
 
 
 ## Notes
-The reason behind the name srcFiles instead of src is due to arduino-cli including
+The reason behind the name source instead of src is due to arduino-cli including
 any files either in the base directory, or files includes in src. This leads to
 double inclusion of Main.cpp if header guards are not used which I chose to
 avoid, hence the odd naming of the folder

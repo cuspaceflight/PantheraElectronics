@@ -3,6 +3,7 @@
 #include "Arduino.h"
 #include "LoRa.h"
 #include "NMEAGPS.h"
+#include "SoftwareSerial.h"
 
 #include <stdint.h>
 

@@ -1,17 +1,54 @@
-board=teensy:avr:teensy41
-project=PantheraSoftware.ino
-mcu=TEENSY41
-port=/dev/ttyACM0
+# Teensy Settings
+teensy_board=teensy:avr:teensy41
+teensy_mcu=TEENSY41
+teensy_port=/dev/ttyACM0
+
+teensy_upload = arduino-loader-cli
+teensy_upload_flags = --mcu=$(mcu) -v -w
+
+# Pico  settings
+pico_board=arduino:mbed_rp2040:pico
+pico_port=/dev/ttyACM0
+
+receiver_dir=Receiver
+receiver_project=Receiver.ino
+
+avionics_dir=Avionics
+avionics_project=Avionics.ino
+
 buildpath=Build
 
-build ${buildpath}/${project}.hex:
-	arduino-cli compile -b ${board} --build-path Build -j 0 ${project}
+cli_flags = -j 0 --build-path $(buildpath)
+compile = arduino-cli compile
 
-upload: build
-	teensy-loader-cli --mcu=${mcu} -w Build/PantheraSoftware.ino.hex -v
+CWD=$(shell pwd)
 
-listen:
-	minicom -b 9600 -o -D ${port}
+$(buildpath)/$(avionics_project).hex: $(avionics_dir)/$(avionics_project) $(buildpath)
+	$(compile) $(cli_flags) -b $(teensy_board) $<
+
+$(buildpath)/$(receiver_project).uf2: $(receiver_dir)/$(receiver_project) $(buildpath)
+	$(compile) $(cli_flags) -b $(pico_board) $<
+
+build_avionics: $(buildpath) $(buildpath)/$(avionics_project).hex
+	@echo "Built avionics"
+
+build_receiver: $(buildpath) $(buildpath)/$(receiver_project).uf2
+	@echo "Built receiver"
+
+build: build_avionics build_receiver
 
 clean:
-	rm -r Build
+	rm -rf Build
+
+$(buildpath)/sketch/Tests:
+	@rm -f $(buildpath)/sketch/Tests
+	@cp -rf $(CWD)/Tests $(buildpath)/sketch/Tests
+
+$(buildpath)/sketch/source:
+	@rm -f $(buildpath)/sketch/source
+	@cp -rf $(CWD)/source $(buildpath)/sketch/source
+
+$(buildpath)/sketch:
+	@mkdir -p $(buildpath)/sketch
+
+$(buildpath): $(buildpath)/sketch $(buildpath)/sketch/source $(buildpath)/sketch/Tests
