@@ -15,6 +15,7 @@
           gnumake
           teensy-loader-cli
           minicom
+          picotool
         ];
       };
     };
