@@ -24,10 +24,10 @@ compile = arduino-cli compile
 
 CWD=$(shell pwd)
 
-$(buildpath)/$(avionics_project).hex: $(avionics_dir)/$(avionics_project) $(buildpath)
+$(buildpath)/$(avionics_project).hex: $(avionics_dir)/$(avionics_project) $(buildpath) $(wildcard source/Avionics/*.cpp)
 	$(compile) $(cli_flags) -b $(teensy_board) $<
 
-$(buildpath)/$(receiver_project).uf2: $(receiver_dir)/$(receiver_project) $(buildpath)
+$(buildpath)/$(receiver_project).uf2: $(receiver_dir)/$(receiver_project) $(buildpath) $(wildcard source/Receiver/*.cpp)
 	$(compile) $(cli_flags) -b $(pico_board) $<
 
 build_avionics: $(buildpath) $(buildpath)/$(avionics_project).hex

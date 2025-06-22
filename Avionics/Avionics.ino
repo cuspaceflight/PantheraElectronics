@@ -27,15 +27,21 @@
 // #define LORA_TEST
 
 #if defined GPS_TEST
+#pragma message("GPS")
 #include "Tests/TEST_GPS.cpp"
 #elif defined GPS_RAW_TEST
+#pragma message("GPS RAW")
 #include "Tests/TEST_GPS_RAW.cpp"
 #elif defined MPU_TEST
+#pragma message("MPU")
 #include "Tests/TEST_MPU.cpp"
 #elif defined BMP_TEST
+#pragma message("BMP")
 #include "Tests/TEST_BMP.cpp"
 #elif defined LORA_TEST
+#pragma message("LORA")
 #include "Tests/TEST_LORA.cpp"
 #else
+#pragma message("Main")
 #include "source/Avionics/Avionics.cpp"
 #endif

@@ -5,12 +5,12 @@
 #include "NMEAGPS.h"
 #include "SD.h"
 #include "SoftwareSerial.h"
+#include "TeensyThreads.h"
 
 #include <stdint.h>
 
 /**
  * TODO:
- * Read GPS
  * Test
  */
 
@@ -34,8 +34,8 @@ typedef struct SensorData_T {
 #define LORA_FREQ 433E6
 #define BMP_ADDR 0x76
 #define BUFFER_SIZE 255
-#define GPS_RX_PIN 0
-#define GPS_TX_PIN 0
+#define GPS_RX_PIN 7
+#define GPS_TX_PIN 8
 #define GPS_BAUDRATE 9600
 #define SD_CARD_SELECT BUILTIN_SDCARD
 #define SD_CARD_MAX_ENTRY 2000
@@ -46,16 +46,36 @@ void transmit_lora(const uint8_t*, size_t);
  * Debug
  */
 #define DEBUG
+#define DEBUG_LORA
+
 #ifdef DEBUG
+#pragma message("Debug enabled")
 #define DEBUG_BUFFER_SIZE 255
+
+#ifdef DEBUG_LORA
+#pragma message("Debug via LoRa")
+#endif
+
 char g_DebugBuffer[DEBUG_BUFFER_SIZE];
 
-#define DEBUG_MSG(...)                                                                             \
+Threads::Mutex g_DebugMutex;
+
+#define DEBUG_MSG_SERIAL(...)                                                                      \
     do {                                                                                           \
         snprintf(g_DebugBuffer, DEBUG_BUFFER_SIZE, __VA_ARGS__);                                   \
         Serial.print(g_DebugBuffer);                                                               \
+    } while (0)
+
+#ifdef DEBUG_LORA
+#define DEBUG_MSG(...)                                                                             \
+    do {                                                                                           \
+        DEBUG_MSG_SERIAL(__VA_ARGS__);                                                             \
         transmit_lora(g_DebugBuffer, DEBUG_BUFFER_SIZE);                                           \
     } while (0)
+#else
+#define DEBUG_MSG(...) DEBUG_MSG_SERIAL(__VA_ARGS__)
+#endif
+
 #else
 #define DEBUG_MSG(...)
 #endif
@@ -80,6 +100,17 @@ int16_t g_CurrentFileEntry = 0;
 int32_t g_CurrentTotalEntry = 0;
 int16_t g_CurrentFile = 0;
 
+int form_message(char** buffer, size_t max_size)
+{
+    return snprintf(*buffer, max_size,
+        "|%10ld| |%10ld| |%f,%f| |%f,%f,%f,%f,%f,%f,%f| |%f,%f,%f| |%f|", millis(),
+        g_CurrentTotalEntry, g_SensorData.bmp_pressure, g_SensorData.bmp_temperature,
+        g_SensorData.mpu_accel[0], g_SensorData.mpu_accel[1], g_SensorData.mpu_accel[2],
+        g_SensorData.mpu_gyro[0], g_SensorData.mpu_gyro[1], g_SensorData.mpu_gyro[2],
+        g_SensorData.bmp_temperature, g_SensorData.gps.latitude(), g_SensorData.gps.longitude(),
+        g_SensorData.gps.altitude(), g_SensorData.gps.speed_mph());
+}
+
 /**
  * Transmit the message specified by data and len via the LoRa
  * module
@@ -87,9 +118,57 @@ int16_t g_CurrentFile = 0;
  */
 void transmit_lora(const char* buffer, size_t size)
 {
+#ifdef DEBUG
+    Threads::Scope m(g_DebugMutex);
+#endif
     LoRa.beginPacket();
     LoRa.write((uint8_t*)buffer, size);
     LoRa.endPacket();
+}
+
+/**
+ * Read from the BMP using the sensors
+ */
+void read_bmp()
+{
+    sensors_event_t temp, pressure;
+    g_BMP_temp_sensor->getEvent(&temp);
+    g_BMP_pressure_sensor->getEvent(&pressure);
+
+    g_SensorData.bmp_temperature = temp.temperature;
+    g_SensorData.bmp_pressure = pressure.pressure;
+
+    DEBUG_MSG("Temperature = %f *C | Pressure = %f hPa", temp.temperature, pressure.pressure);
+}
+
+/**
+ * Read from the MPU using the sensors
+ */
+void read_mpu()
+{
+    sensors_event_t a, g, temp;
+    g_MPU.getEvent(&a, &g, &temp);
+    memcpy(&g_SensorData.mpu_accel, &a.acceleration.v, sizeof(a.acceleration));
+    memcpy(&g_SensorData.mpu_gyro, &g.gyro.v, sizeof(g.gyro));
+    g_SensorData.mpu_temp = temp.temperature;
+
+    DEBUG_MSG("AX: %f, AY: %f, AZ: %f | GX: %f, GY: %f, GZ: %f | T: %f", a.acceleration.x,
+        a.acceleration.y, a.acceleration.z, g.gyro.x, g.gyro.y, g.gyro.z, temp.temperature);
+}
+
+/**
+ * Read from the GPS serial port and transmit over LoRa
+ */
+void gps_read_loop()
+{
+    static char buffer[BUFFER_SIZE];
+    while (g_GPS.available(g_GPS_port)) {
+        g_SensorData.gps = g_GPS.read();
+
+        form_message((char**)&buffer, BUFFER_SIZE);
+
+        transmit_lora(buffer, BUFFER_SIZE);
+    }
 }
 
 /**
@@ -181,42 +260,11 @@ void init_mpu()
 /**
  * Initialize the GPS sensor
  */
-void init_gps() { g_GPS_port.begin(GPS_BAUDRATE); }
-
-/**
- * Read from the BMP using the sensors
- */
-void read_bmp()
+void init_gps()
 {
-    sensors_event_t temp, pressure;
-    g_BMP_temp_sensor->getEvent(&temp);
-    g_BMP_pressure_sensor->getEvent(&pressure);
-
-    g_SensorData.bmp_temperature = temp.temperature;
-    g_SensorData.bmp_pressure = pressure.pressure;
-
-    DEBUG_MSG("Temperature = %f *C | Pressure = %f hPa", temp.temperature, pressure.pressure);
+    g_GPS_port.begin(GPS_BAUDRATE);
+    threads.addThread(gps_read_loop);
 }
-
-/**
- * Read from the MPU using the sensors
- */
-void read_mpu()
-{
-    sensors_event_t a, g, temp;
-    g_MPU.getEvent(&a, &g, &temp);
-    memcpy(&g_SensorData.mpu_accel, &a.acceleration.v, sizeof(a.acceleration));
-    memcpy(&g_SensorData.mpu_gyro, &g.gyro.v, sizeof(g.gyro));
-    g_SensorData.mpu_temp = temp.temperature;
-
-    DEBUG_MSG("AX: %f, AY: %f, AZ: %f | GX: %f, GY: %f, GZ: %f | T: %f", a.acceleration.x,
-        a.acceleration.y, a.acceleration.z, g.gyro.x, g.gyro.y, g.gyro.z, temp.temperature);
-}
-
-/**
- * Read from the GPS and transmit via LoRa the current information
- */
-void read_and_transmit_gps() { }
 
 /**
  * Called once on startup
@@ -257,12 +305,7 @@ void loop()
     read_mpu();
     read_bmp();
 
-    int total = snprintf(g_Buffer, BUFFER_SIZE, "|%10ld| |%10ld| |%f,%f| |%f,%f,%f,%f,%f,%f,%f|\n",
-        millis(), g_CurrentTotalEntry, g_SensorData.bmp_pressure, g_SensorData.bmp_temperature,
-        g_SensorData.mpu_accel[0], g_SensorData.mpu_accel[1], g_SensorData.mpu_accel[2],
-        g_SensorData.mpu_gyro[0], g_SensorData.mpu_gyro[1], g_SensorData.mpu_gyro[2],
-        g_SensorData.bmp_temperature);
-
+    int total = form_message((char**)&g_Buffer, BUFFER_SIZE);
     DEBUG_MSG(g_Buffer, total);
 
     current_file.print(g_Buffer);
