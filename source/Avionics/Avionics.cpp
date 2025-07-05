@@ -31,6 +31,9 @@ typedef struct SensorData_T {
 /**
  * Defines
  */
+// #define DEBUG
+// #define DEBUG_LORA
+
 #define LORA_FREQ 433E6
 #define BMP_ADDR 0x76
 #define BUFFER_SIZE 255
@@ -38,15 +41,18 @@ typedef struct SensorData_T {
 #define GPS_TX_PIN 8
 #define GPS_BAUDRATE 9600
 #define SD_CARD_SELECT BUILTIN_SDCARD
+
+#ifdef DEBUG
+#define SD_CARD_MAX_ENTRY 10
+#else
 #define SD_CARD_MAX_ENTRY 2000
+#endif
 
 void transmit_lora(const uint8_t*, size_t);
 
 /**
  * Debug
  */
-#define DEBUG
-#define DEBUG_LORA
 
 #ifdef DEBUG
 #pragma message("Debug enabled")
@@ -100,10 +106,13 @@ int16_t g_CurrentFileEntry = 0;
 int32_t g_CurrentTotalEntry = 0;
 int16_t g_CurrentFile = 0;
 
-int form_message(char** buffer, size_t max_size)
+File current_file;
+bool new_file = true;
+
+int form_message(char* buffer, size_t max_size)
 {
-    return snprintf(*buffer, max_size,
-        "|%10ld| |%10ld| |%f,%f| |%f,%f,%f,%f,%f,%f,%f| |%f,%f,%f| |%f|", millis(),
+    return snprintf(buffer, max_size,
+        "|%10ld| |%10ld| |%f,%f| |%f,%f,%f,%f,%f,%f,%f| |%f,%f,%f| |%f|\n", millis(),
         g_CurrentTotalEntry, g_SensorData.bmp_pressure, g_SensorData.bmp_temperature,
         g_SensorData.mpu_accel[0], g_SensorData.mpu_accel[1], g_SensorData.mpu_accel[2],
         g_SensorData.mpu_gyro[0], g_SensorData.mpu_gyro[1], g_SensorData.mpu_gyro[2],
@@ -138,7 +147,7 @@ void read_bmp()
     g_SensorData.bmp_temperature = temp.temperature;
     g_SensorData.bmp_pressure = pressure.pressure;
 
-    DEBUG_MSG("Temperature = %f *C | Pressure = %f hPa", temp.temperature, pressure.pressure);
+    DEBUG_MSG("Temperature = %f *C | Pressure = %f hPa\n", temp.temperature, pressure.pressure);
 }
 
 /**
@@ -152,7 +161,7 @@ void read_mpu()
     memcpy(&g_SensorData.mpu_gyro, &g.gyro.v, sizeof(g.gyro));
     g_SensorData.mpu_temp = temp.temperature;
 
-    DEBUG_MSG("AX: %f, AY: %f, AZ: %f | GX: %f, GY: %f, GZ: %f | T: %f", a.acceleration.x,
+    DEBUG_MSG("AX: %f, AY: %f, AZ: %f | GX: %f, GY: %f, GZ: %f | T: %f\n", a.acceleration.x,
         a.acceleration.y, a.acceleration.z, g.gyro.x, g.gyro.y, g.gyro.z, temp.temperature);
 }
 
@@ -165,7 +174,7 @@ void gps_read_loop()
     while (g_GPS.available(g_GPS_port)) {
         g_SensorData.gps = g_GPS.read();
 
-        form_message((char**)&buffer, BUFFER_SIZE);
+        form_message(buffer, BUFFER_SIZE);
 
         transmit_lora(buffer, BUFFER_SIZE);
     }
@@ -213,9 +222,9 @@ void init_sd_card()
         count++;
     }
 
-    snprintf(g_Buffer, BUFFER_SIZE, "/Capture_%d", count);
+    snprintf(g_Buffer, BUFFER_SIZE, "Capture_%d", count);
     SD.mkdir(g_Buffer);
-    snprintf(g_DirectoryName, BUFFER_SIZE, "/Capture_%d", count);
+    snprintf(g_DirectoryName, BUFFER_SIZE, "Capture_%d", count);
 
     DEBUG_MSG(g_Buffer, "Created directory Capture_%d\n", count);
 }
@@ -290,14 +299,13 @@ void setup()
  */
 void loop()
 {
-    static File current_file;
-    static bool new_file = true;
-
     if (new_file) {
         new_file = false;
 
-        snprintf(g_Buffer, BUFFER_SIZE, "%s/Entry_%d", g_DirectoryName, g_CurrentFile);
+        int size
+            = snprintf(g_Buffer, BUFFER_SIZE, "%s/Entry_%d.txt", g_DirectoryName, g_CurrentFile);
         current_file = SD.open(g_Buffer, FILE_WRITE);
+
         g_CurrentFileEntry = 0;
     }
 
@@ -305,7 +313,7 @@ void loop()
     read_mpu();
     read_bmp();
 
-    int total = form_message((char**)&g_Buffer, BUFFER_SIZE);
+    int total = form_message(g_Buffer, BUFFER_SIZE);
     DEBUG_MSG(g_Buffer, total);
 
     current_file.print(g_Buffer);

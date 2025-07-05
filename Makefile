@@ -24,10 +24,11 @@ compile = arduino-cli compile
 
 CWD=$(shell pwd)
 
-$(buildpath)/$(avionics_project).hex: $(avionics_dir)/$(avionics_project) $(buildpath) $(wildcard source/Avionics/*.cpp)
+$(buildpath)/$(avionics_project).hex: $(avionics_dir)/$(avionics_project) $(buildpath) $(wildcard source/Avionics/*.cpp) $(wildcard Tests/*.cpp)
 	$(compile) $(cli_flags) -b $(teensy_board) $<
 
-$(buildpath)/$(receiver_project).uf2: $(receiver_dir)/$(receiver_project) $(buildpath) $(wildcard source/Receiver/*.cpp)
+$(buildpath)/$(receiver_project).uf2: $(receiver_dir)/$(receiver_project) $(buildpath) $(wildcard source/Receiver/*.cpp) $(wildcard Tests/*.cpp)
+
 	$(compile) $(cli_flags) -b $(pico_board) $<
 
 build_avionics: $(buildpath) $(buildpath)/$(avionics_project).hex
@@ -40,7 +41,7 @@ upload_receiver: $(build_receiver)
 	@cp $(buildpath)/$(receiver_project).uf2 $(pico_destination)
 	@echo "Uploaded code to pico"
 
-upload_avionics: $(build_avionics)
+upload_avionics: build_avionics $(build_avionics)
 	@$(teensy_upload) $(teensy_upload_flags) Build/Avionics.ino.hex
 	@echo "Uploaded code to teensy"
 
