@@ -1,27 +1,28 @@
-#include "Arduino.h"
+#include <SPI.h>
+#include <LoRa.h>
 
-// UART gps(4, 5, NC, NC);
+void setup() {
+  Serial.begin(9600);
+  while (!Serial);
 
-char buffer[255];
-void setup()
-{
-    Serial.begin(9600);
-    // gps.begin(9600);
+  Serial.println("LoRa Receiver");
 
-    snprintf(buffer, 255,
-            "|%10ld| |%10ld| |%f,%f| |%f,%f,%f,%f,%f,%f,%f| |%f,%f,%f| |%f|\n", millis(),
-            100, 1024.5f, 24.0f,
-            0.0f, 0.1f, 0.2f,
-            0.3f, 0.4f, 0.5f,
-            25.0f, 100.0f, 30.0f,
-            200.0f, 200.0f);
+  LoRa.setPins(15, -1, -1);
+
+  if (!LoRa.begin(433E6)) {
+    Serial.println("Starting LoRa failed!");
+    while (1);
+  }
+  LoRa.setSyncWord(0xAA);
+  Serial.print("Start Receiving");
 }
 
-void loop()
-{
-    // while (gps.available()) {
-    //     Serial.print((char)gps.read());
-    // }
-    Serial.print(buffer);
-    delay(1000);
+void loop() {
+  // try to parse packet
+  int packetSize = LoRa.parsePacket();
+  if (packetSize) {
+    while (LoRa.available()) {
+      Serial.print((char)LoRa.read());
+    }
+  }
 }

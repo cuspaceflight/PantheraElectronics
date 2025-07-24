@@ -12,6 +12,7 @@ with open("Output", "w") as file:
 
         try:
             decoded = serialString.decode("Ascii")
+            print(decoded)
 
             sections = [x.split(",") for x in decoded.split("|") if x != " " and x != "" and x != "\n"]
             print(sections)
