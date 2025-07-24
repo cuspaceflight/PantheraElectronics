@@ -116,7 +116,7 @@ int form_message(char* buffer, size_t max_size)
         g_CurrentTotalEntry, g_SensorData.bmp_pressure, g_SensorData.bmp_temperature,
         g_SensorData.mpu_accel[0], g_SensorData.mpu_accel[1], g_SensorData.mpu_accel[2],
         g_SensorData.mpu_gyro[0], g_SensorData.mpu_gyro[1], g_SensorData.mpu_gyro[2],
-        g_SensorData.bmp_temperature, g_SensorData.gps.latitude(), g_SensorData.gps.longitude(),
+        g_SensorData.mpu_temp, g_SensorData.gps.latitude(), g_SensorData.gps.longitude(),
         g_SensorData.gps.altitude(), g_SensorData.gps.speed_mph());
 }
 
