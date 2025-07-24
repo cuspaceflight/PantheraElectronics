@@ -31,7 +31,7 @@ typedef struct SensorData_T {
 /**
  * Defines
  */
-// #define DEBUG
+#define DEBUG
 // #define DEBUG_LORA
 
 #define LORA_FREQ 433E6
@@ -112,8 +112,9 @@ bool new_file = true;
 int form_message(char* buffer, size_t max_size)
 {
     return snprintf(buffer, max_size,
-        "|%10ld| |%10ld| |%f,%f| |%f,%f,%f,%f,%f,%f,%f| |%f,%f,%f| |%f|\n", millis(),
-        g_CurrentTotalEntry, g_SensorData.bmp_pressure, g_SensorData.bmp_temperature,
+        "|%10ld| |%10ld| |%5.5f,%5.5f| |%5.5f,%5.5f,%5.5f,%5.5f,%5.5f,%5.5f,%5.5f| "
+        "|%5.5f,%5.5f,%5.5f| |%5.5f|\n",
+        millis(), g_CurrentTotalEntry, g_SensorData.bmp_pressure, g_SensorData.bmp_temperature,
         g_SensorData.mpu_accel[0], g_SensorData.mpu_accel[1], g_SensorData.mpu_accel[2],
         g_SensorData.mpu_gyro[0], g_SensorData.mpu_gyro[1], g_SensorData.mpu_gyro[2],
         g_SensorData.mpu_temp, g_SensorData.gps.latitude(), g_SensorData.gps.longitude(),
@@ -147,7 +148,8 @@ void read_bmp()
     g_SensorData.bmp_temperature = temp.temperature;
     g_SensorData.bmp_pressure = pressure.pressure;
 
-    DEBUG_MSG("Temperature = %f *C | Pressure = %f hPa\n", temp.temperature, pressure.pressure);
+    DEBUG_MSG(
+        "Temperature = %5.5f *C | Pressure = %5.5f hPa\n", temp.temperature, pressure.pressure);
 }
 
 /**
@@ -161,8 +163,9 @@ void read_mpu()
     memcpy(&g_SensorData.mpu_gyro, &g.gyro.v, sizeof(g.gyro));
     g_SensorData.mpu_temp = temp.temperature;
 
-    DEBUG_MSG("AX: %f, AY: %f, AZ: %f | GX: %f, GY: %f, GZ: %f | T: %f\n", a.acceleration.x,
-        a.acceleration.y, a.acceleration.z, g.gyro.x, g.gyro.y, g.gyro.z, temp.temperature);
+    DEBUG_MSG("AX: %5.5f, AY: %5.5f, AZ: %5.5f | GX: %5.5f, GY: %5.5f, GZ: %5.5f | T: %5.5f\n",
+        a.acceleration.x, a.acceleration.y, a.acceleration.z, g.gyro.x, g.gyro.y, g.gyro.z,
+        temp.temperature);
 }
 
 /**
@@ -171,12 +174,14 @@ void read_mpu()
 void gps_read_loop()
 {
     static char buffer[BUFFER_SIZE];
-    while (g_GPS.available(g_GPS_port)) {
-        g_SensorData.gps = g_GPS.read();
+    while (true) {
+        while (g_GPS.available(g_GPS_port)) {
+            g_SensorData.gps = g_GPS.read();
 
-        form_message(buffer, BUFFER_SIZE);
+            form_message(buffer, BUFFER_SIZE);
 
-        transmit_lora(buffer, BUFFER_SIZE);
+            transmit_lora(buffer, BUFFER_SIZE);
+        }
     }
 }
 
@@ -193,9 +198,10 @@ void init_lora()
     }
     DEBUG_MSG("LoRa Initialized\n");
 
-    LoRa.setTxPower(20);
-    LoRa.setSpreadingFactor(10);
+    // LoRa.setTxPower(20);
+    // LoRa.setSpreadingFactor(10);
     LoRa.setSyncWord(0xAA);
+    // LoRa.setGain(3);
 }
 
 /**
@@ -285,6 +291,7 @@ void setup()
     while (!Serial)
         ;
 #endif
+
     init_lora();
     init_sd_card();
     init_bmp();
