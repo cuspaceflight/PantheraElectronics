@@ -7,6 +7,7 @@
 #include "SoftwareSerial.h"
 #include "TeensyThreads.h"
 
+#include <assert.h>
 #include <stdint.h>
 
 /**
@@ -28,17 +29,35 @@ typedef struct SensorData_T {
     gps_fix gps;
 } SensorData;
 
+typedef struct LoraMessage_T {
+    uint32_t timestamp;
+    uint32_t entry;
+    float gps_lat;
+    float gps_lon;
+    float gps_alt;
+    float gps_speed;
+    float bmp_pressure;
+    float bmp_temperature;
+    float mpu_accel_x;
+    float mpu_accel_y;
+    float mpu_accel_z;
+    float mpu_gyro_x;
+    float mpu_gyro_y;
+    float mpu_gyro_z;
+    float mpu_temp;
+} LoraMessage;
+
 /**
  * Defines
  */
-#define DEBUG
+// #define DEBUG
 // #define DEBUG_LORA
 
 #define LORA_FREQ 433E6
 #define BMP_ADDR 0x76
 #define BUFFER_SIZE 255
-#define GPS_RX_PIN 7
-#define GPS_TX_PIN 8
+#define GPS_RX_PIN 0
+#define GPS_TX_PIN 1
 #define GPS_BAUDRATE 9600
 #define SD_CARD_SELECT BUILTIN_SDCARD
 
@@ -111,14 +130,39 @@ bool new_file = true;
 
 int form_message(char* buffer, size_t max_size)
 {
-    return snprintf(buffer, max_size,
-        "|%10ld| |%10ld| |%5.5f,%5.5f| |%5.5f,%5.5f,%5.5f,%5.5f,%5.5f,%5.5f,%5.5f| "
-        "|%5.5f,%5.5f,%5.5f| |%5.5f|\n",
-        millis(), g_CurrentTotalEntry, g_SensorData.bmp_pressure, g_SensorData.bmp_temperature,
-        g_SensorData.mpu_accel[0], g_SensorData.mpu_accel[1], g_SensorData.mpu_accel[2],
-        g_SensorData.mpu_gyro[0], g_SensorData.mpu_gyro[1], g_SensorData.mpu_gyro[2],
-        g_SensorData.mpu_temp, g_SensorData.gps.latitude(), g_SensorData.gps.longitude(),
-        g_SensorData.gps.altitude(), g_SensorData.gps.speed_mph());
+    assert(sizeof(LoraMessage) < max_size);
+
+    LoraMessage message;
+    message.timestamp = millis();
+    message.entry = g_CurrentTotalEntry;
+
+    message.gps_lat = g_SensorData.gps.latitude();
+    message.gps_lon = g_SensorData.gps.longitude();
+    message.gps_alt = g_SensorData.gps.altitude();
+    message.gps_speed = g_SensorData.gps.speed_mph();
+
+    message.bmp_pressure = g_SensorData.bmp_pressure;
+    message.bmp_temperature = g_SensorData.bmp_temperature;
+    message.mpu_accel_x = g_SensorData.mpu_accel[0];
+    message.mpu_accel_y = g_SensorData.mpu_accel[1];
+    message.mpu_accel_z = g_SensorData.mpu_accel[2];
+    message.mpu_gyro_x = g_SensorData.mpu_gyro[0];
+    message.mpu_gyro_y = g_SensorData.mpu_gyro[1];
+    message.mpu_gyro_z = g_SensorData.mpu_gyro[2];
+    message.mpu_temp = g_SensorData.mpu_temp;
+
+    memcpy(buffer, &message, sizeof(LoraMessage));
+
+    return sizeof(LoraMessage);
+
+    // return snprintf(buffer, max_size,
+    //     "|%10ld| |%10ld| |%5.5f,%5.5f| |%5.5f,%5.5f,%5.5f,%5.5f,%5.5f,%5.5f,%5.5f| "
+    //     "|%5.5f,%5.5f,%5.5f| |%5.5f|\n",
+    //     millis(), g_CurrentTotalEntry, g_SensorData.bmp_pressure, g_SensorData.bmp_temperature,
+    //     g_SensorData.mpu_accel[0], g_SensorData.mpu_accel[1], g_SensorData.mpu_accel[2],
+    //     g_SensorData.mpu_gyro[0], g_SensorData.mpu_gyro[1], g_SensorData.mpu_gyro[2],
+    //     g_SensorData.mpu_temp, g_SensorData.gps.latitude(), g_SensorData.gps.longitude(),
+    //     g_SensorData.gps.altitude(), g_SensorData.gps.speed_mph());
 }
 
 /**
@@ -178,9 +222,9 @@ void gps_read_loop()
         while (g_GPS.available(g_GPS_port)) {
             g_SensorData.gps = g_GPS.read();
 
-            form_message(buffer, BUFFER_SIZE);
+            int length = form_message(buffer, BUFFER_SIZE);
 
-            transmit_lora(buffer, BUFFER_SIZE);
+            transmit_lora(buffer, length);
         }
     }
 }
@@ -199,9 +243,13 @@ void init_lora()
     DEBUG_MSG("LoRa Initialized\n");
 
     // LoRa.setTxPower(20);
-    // LoRa.setSpreadingFactor(10);
-    LoRa.setSyncWord(0xAA);
     // LoRa.setGain(3);
+    LoRa.setSyncWord(0x34);
+    LoRa.setSpreadingFactor(11);
+    LoRa.setSignalBandwidth(125E3);
+    LoRa.setCodingRate4(5);
+    LoRa.setPreambleLength(8);
+    LoRa.enableCrc();
 }
 
 /**
@@ -319,9 +367,6 @@ void loop()
     // Synchronous Reads
     read_mpu();
     read_bmp();
-
-    int total = form_message(g_Buffer, BUFFER_SIZE);
-    DEBUG_MSG(g_Buffer, total);
 
     current_file.print(g_Buffer);
 
